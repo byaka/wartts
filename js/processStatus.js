@@ -8,28 +8,47 @@ var processStatus={
 
 processStatus.init=function(apiHost){
    processStatus.apiHost=apiHost;
-   processStatus.timer=setTimeout(function(){
-      clearTimeout(processStatus.timer);
-      processStatus.dataFromApi();
-      processStatus.timer=setTimeout(arguments.callee, 50);
-   }, 500);
+   processStatus.timer=setTimeout(processStatus.update, 500);
 }
 
-processStatus.dataFromApi=function(){
-   var url=processStatus.apiHost+'/indicators';
-   if(processStatus.apiFake) //if fakeApi enabled, we get API request from github's example
-      url='https://raw.githubusercontent.com/byaka/WarThunderTacticalScreen_discuss/master/API/indicators2.js';
-   ajaxMe(url, function(data, status, r) {
-      if(!data) //empty request
-         return print('EMPTY_STATE');
+processStatus.update=function(){
+   clearTimeout(processStatus.timer);
+   processStatus.dataFromApi(function(){
+      processStatus.timer=setTimeout(processStatus.update, 50);
+   });
+}
+
+processStatus.dataFromApi=function(cb){
+   var rCount=0, dataAll={}, url=[];
+   if(processStatus.apiFake){ //if fakeApi enabled, we get API request from github's example
+      var s='https://raw.githubusercontent.com/byaka/WarThunderTacticalScreen_discuss/master/API';
+      url.push(s+'/indicators2.js');
+      url.push(s+'/state2.js');
+   }else{
+      url.push(processStatus.apiHost+'/indicators');
+      url.push(processStatus.apiHost+'/state');
+   }
+   var tFunc_check=function(data, status){
+      rCount-=1;
+      if(!data){ //empty request
+         if(cb) cb();
+         return;
+      }
       //parse to JSON
       var data=JSON.parse(data);
-      processStatus.data2group(data);
+      Object.merge(dataAll, data);
+      if(rCount) return;
+      processStatus.data2group(dataAll);
+      if(cb) cb();
+   }
+   rCount=url.length;
+   forMe(url, function(u){
+      ajaxMe(u, tFunc_check);
    })
 }
 
 processStatus.data2group=function(data){
-   var groups=['dinamic', 'player', 'static'];
+   var groups=['dinamic', 'static'];
    var oldHash={};
    forMe(groups, function(g){
       //clear group
@@ -41,12 +60,16 @@ processStatus.data2group=function(data){
       processStatus.dataGroupForRender[g]={};
    })
    //processing
-   var static=['type'];
+   var static=['model'];
    var convKeyMap={
-      'type':'model', 'vario': 'vspeed', 'speed':'speed'
+      'type':'model', 'Vy, m/s': 'vspeed', 'TAS, km/h':'speed', 'flaps, %':'flaps', 'throttle 1, %':'throttle', 'gear, %':'gears', 'radiator 1, %':'radiator'
    }
    var convValMap={
-      'speed':function(v){return v*3.6}
+      // speed:function(v){return v*3.6},
+      flaps:function(v){return v/100},
+      throttle:function(v){return v/100},
+      gears:function(v){return v/100},
+      radiator:function(v){return v/100},
    }
    forMe(data, function(k, v){
       if(!convKeyMap[k]) return;

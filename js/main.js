@@ -70,7 +70,6 @@ function init_part2(){
    //
    renderMap.init();
    renderHud.init();
-   renderingQueue_mapBGChanged();
    //wait for all resources ready
    var initTimer=setInterval(function(){
       if(initQueue.length){
@@ -140,6 +139,7 @@ function inited(){
             renderMap[l](domLink.mapLayer[l], domLink.mapLayer[l+'Ctx'], data, renderingSettings.map, true);
          }
       })
+   //==HUD
       forMe(['dinamic'], function(l){
          //clear rendering queue
          var data=renderingQueue.hud[l];
@@ -162,7 +162,7 @@ function correctZoom(){
    if(renderingSettings.map.zoom>renderingSettings.map.zoomMax) renderingSettings.map.zoom=renderingSettings.map.zoomMax;
 }
 
-function renderingQueue_map(data){
+function renderingQueue_objects(data){
    if(data.dinamic)
       renderingQueue.map.dinamic=data.dinamic;
    if(data.player)
@@ -178,33 +178,87 @@ function renderingQueue_hud(data){
       renderingQueue.hud.static=data.static;
 }
 
-function renderingQueue_mapBGChanged(data){
+function renderingQueue_map(data){
+   clearTimeout(renderingQueue_map.timer);
    initQueue.push('__map__');
-   var url=settings.apiHost+'/map.img?gen=7';
+   var anticache=randomEx();
+   var url=settings.apiHost+'/map.img?%s'.format(anticache);
    if(settings.apiFake) url='img/map.jpg';
    var img=new Image();
+   img.id=anticache;
    img.onload=function(){
-      var saturate=0.5;
-      renderingQueue.map.background={'img':this, 'saturate':saturate};
-      //saturate background
-      var s='grayscale(%s%%)'.format((1-saturate)*100)
-      forMe(['filter', '-webkit-filter', '-moz-filter', '-ms-filter', '-o-filter'], function(n){domLink.mapLayer.background.style[n]=s});
-      //calc auto-zoom
-      var w=this.width, h=this.height;
-      var mapW=domLink.map.innerWidth(), mapH=domLink.map.innerHeight();
-      var sz=max(w, h), mapSZ=max(mapW, mapH);
-      renderingSettings.map.zoom=mapSZ/sz;
-      correctZoom();
+      img.onload=null;
+      if(this.width<100){ //to early, map not loaded yet
+         initQueue.splice(initQueue.indexOf('__map__'), 1);
+         renderingQueue_map.timer=setTimeout(renderingQueue_map, 5000);
+         return;
+      }
+      renderingQueue.map.background={'img':this, 'saturate':0.5, 'anticache':this.id};
       renderingSettings.map.force=true;
+      //saturate background
+      var s='grayscale(%s%%)'.format((1-renderingQueue.map.background.saturate)*100)
+      forMe(['filter', '-webkit-filter', '-moz-filter', '-ms-filter', '-o-filter'], function(n){domLink.mapLayer.background.style[n]=s});
+      //save image size
+      var w=this.width, h=this.height;
       renderingSettings.map.width=w;
       renderingSettings.map.height=h;
+      //correct size of layers
+      var mapW=domLink.map.innerWidth(), mapH=domLink.map.innerHeight();
       forMe(['dinamic', 'background', 'player', 'static'], function(l){
          domLink.mapLayer[l].width=mapW;
          domLink.mapLayer[l].height=mapH;
+         // renderingQueueOld.map[l]=null;
       })
+      //calc auto-zoom
+      autoZoom('fitByObjects', w, h, mapW, mapH, function(z){
+         renderingSettings.map.zoom=z;
+         correctZoom();
+      });
+       //complited
       initQueue.splice(initQueue.indexOf('__map__'), 1);
    }
    img.src=url;
+}
+
+function autoZoom(type, mapW, mapH, wrapW, wrapH, cb){
+   clearTimeout(autoZoom.timer);
+   if(type=='fitByMax'){
+      var mapSZ=max(mapW, mapH), wrapSZ=max(wrapW, wrapH);
+      var z=wrapSZ/mapSZ;
+   }else if(type=='fitByMin'){
+      var mapSZ=max(mapW, mapH), wrapSZ=min(wrapW, wrapH);
+      var z=wrapSZ/mapSZ;
+   }else if(type=='fitByObjects'){
+      if(!renderingQueueOld.map.dinamic || !renderingQueueOld.map.player || !renderingQueueOld.map.static){
+         autoZoom.timer=setTimeout(function(){
+            autoZoom(type, mapW, mapH, wrapW, wrapH, cb);
+         }, 500)
+         return;
+      }
+      print('READY FOR ZOOM')
+      var tArr0=[].concat(renderingQueueOld.map.dinamic, renderingQueueOld.map.player, renderingQueueOld.map.static);
+      var minX=99999999, minY=99999999, maxX=0, maxY=0;
+      forMe(tArr0, function(o){
+         if(isArray(o.x)){
+            minX=min(minX, o.x[0], o.x[1]);
+            minY=min(minY, o.y[0], o.y[1]);
+            maxX=min(maxX, o.x[0], o.x[1]);
+            maxY=min(maxY, o.y[0], o.y[1]);
+         }else{
+            minX=min(minX, o.x);
+            minY=min(minY, o.y);
+            maxX=min(maxX, o.x);
+            maxY=min(maxY, o.y);
+         }
+      })
+      mapW=Math.abs(mapW*(maxX-minX));
+      mapH=Math.abs(mapH*(maxY-minY));
+      print('>', mapW, mapH)
+      var mapSZ=max(mapW, mapH), wrapSZ=min(wrapW, wrapH);
+      var z=wrapSZ/mapSZ;
+   }
+   if(cb) cb(z);
+   return z;
 }
 
 documentReady(init_part1);

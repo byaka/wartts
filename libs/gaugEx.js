@@ -1,4 +1,7 @@
+// https://goo.gl/HhQLfb
+
 function gaugEx(elem, p){
+   var self=arguments.callee;
    p=p|| {};
    var shape=p.shape|| [0, 180, 30]
    var size=p.size|| [0.5, 0.5, 0.5];
@@ -34,15 +37,33 @@ function gaugEx(elem, p){
       if(v===null) v=o.zero;
       else if(v<o.min) v=o.min;
       else if(v>o.max) v=o.max;
-      //if(o.invert) v=-v;
+      var color=o.colors;
+      if(isObject(color)){
+         //calculate color
+         var colorKeys=Object.keys(color)
+         if(!colorKeys.length) color='white';
+         else if(colorKeys.length==1) color=color[colorKeys[0]];
+         else if(color[v]) color=color[v];
+         else{
+            colorKeys=forMe(colorKeys, function(k){return parseFloat(k)}, null, true).sort(function(s1, s2){return s1-s2});
+            var ki=0;
+            forMe(colorKeys, function(k, i){
+               if(!i || i+1==colorKeys.length) return;
+               if(v>=k && v<colorKeys[i+1]){
+                  ki=i;
+                  return false;
+               }
+            })
+            var ck1=colorKeys[ki], ck2=colorKeys[ki+1];
+            var c1=color[ck1], c2=color[ck2];
+            var pos=Math.abs((v-ck1)/(ck2-ck1));
+            color=gradient(c1, c2, pos);
+         }
+      }
       if(o.invert) v=(o.max+o.min)-v;
       v=(v-o.min)*-step;
       v=(v-90)*deg2rad;
       //calc params
-      var color=o.colors;
-      if(isArray(color)){
-         //calculate color
-      }
       var w=o.canvas.width, h=o.canvas.height;
       o.canvasCtx.clearRect(0, 0, w, h);
       w-=o.padding*2;

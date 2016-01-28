@@ -62,15 +62,6 @@ function canvas2pixels(){
    return tmpCanvasCtx1.getImageData(0, 0, tmpCanvas1.width, tmpCanvas1.height);
 }
 
-function hex2rgb(hex){
-   var l=parseInt(hex.replace(/^#/, ""), 16);
-   return {
-      r:(l >>> 16) & 0xff,
-      g:(l >>> 8) & 0xff,
-      b:l & 0xff
-   };
-}
-
 function changeColor(data, color){
    for(var i=0, l=data.original.data.length; i<l; i+=4){
       if(data.new.data[i+3]>0){ // If it's not a transparent pixel

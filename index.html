@@ -8,20 +8,39 @@
 </head>
 <body style='margin: 0; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; cursor: default;'>
 
-<div id="hud" style='pointer-events: none; z-index: 100; position: absolute; width: 100%; height: 140px; background-color: rgba(0, 0, 0, 0.4)'>
-   <div id="vspeed" class="gauge" style="position: relative; width: 200px; height: 100%; float: left;">
+<div class="hud" style='pointer-events: none; z-index: 100; position: absolute; width: 100%; height: 140px;'>
+   <div id="vspeed" class="gauge" style="position: relative; width: 200px; height: 100%; float: left; background-color: rgba(0, 0, 0, 0.4);">
       <canvas id="canvas" width="60" height="120" style="opacity: 0.8;"></canvas>
-      <div id="value" style="position: absolute; width: 80px; height: 40px; line-height: 40px; color: #ccc;
-    left: 50px; top: 21px; text-align: center; font-size: 40px; font-weight: bold; font-family: sans-serif;"></div>
-      <div class="title" style="color: #ccc;text-align: center; font-size: 17px; font-family: sans-serif; margin-top: -10px;">Вертикальная скорость</div>
+      <div id="value" style="position: absolute; width: 120px; height: 40px; line-height: 40px; color: #ccc; left: 40px; top: 25px; text-align: center; font-size: 40px; font-weight: bold; font-family: sans-serif;"></div>
+      <div id="suffix" style="position: absolute; width: 100px; height: 30px; line-height: 30px; color: #777; left: 50px; top: 65px; text-align: center; font-size: 25px; font-weight: bold; font-family: sans-serif;">м/с</div>
+      <div class="title" style="color: #999; text-align: center; font-size: 17px; font-family: sans-serif; margin-top: -10px;">Вертикальная скорость</div>
    </div>
-   <div id="speed" class="gauge" style="position: relative; width: 200px; height: 100%; float: left;">
+   <div id="speed" class="gauge" style="position: relative; width: 200px; height: 100%; float: left; background-color: rgba(0, 0, 0, 0.4);">
       <canvas id="canvas" width="200" height="100" style="opacity: 0.8; margin-top:10px; margin-bottom: 10px;"></canvas>
-      <div id="value" style="position: absolute; width: 200px; height: 40px; line-height: 40px; color: #ccc;
-    left: 0px; top: 65px; text-align: center; font-size: 28px; font-weight: bold; font-family: sans-serif;"></div>
-      <div class="title" style="color: #ccc;text-align: center; font-size: 17px; font-family: sans-serif; margin-top: -10px;">Скорость</div>
+      <div style="position: absolute; width: 200px; height: 40px; line-height: 40px; color: #ccc; left: 0px; top: 65px; text-align: center; font-size: 30px; font-weight: bold; font-family: sans-serif;"><span id="value"></span><span style="color: #777; font-size: 25px;">&nbsp;км/ч</span></div>
+      <div class="title" style="color: #999; text-align: center; font-size: 17px; font-family: sans-serif; margin-top: -10px;">Скорость</div>
    </div>
 </div>
+
+<div class="hud" style='pointer-events: none; z-index: 100; position: absolute; top: 140px; width: 100%; height: 80px;'>
+   <div id="flaps" class="gauge" style="position: relative; width: 70px; height: 100%; float: left; background-color: rgba(0, 0, 0, 0.4);">
+      <canvas id="canvas" width="50" height="50" style="opacity: 0.8; margin-top: 5px; margin-bottom: 10px;     margin-left: 10px;"></canvas>
+      <div class="title" style="color: #999; text-align: center; font-size: 15px; font-family: sans-serif; margin-top: -10px;">Закрылки</div>
+   </div>
+   <div id="throttle" class="gauge" style="position: relative; width: 70px; height: 100%; float: left; background-color: rgba(0, 0, 0, 0.4);">
+      <canvas id="canvas" width="50" height="50" style="opacity: 0.8; margin-top: 5px; margin-bottom: 10px;     margin-left: 10px;"></canvas>
+      <div class="title" style="color: #999; text-align: center; font-size: 15px; font-family: sans-serif; margin-top: -10px;">Обороты</div>
+   </div>
+   <div id="radiator" class="gauge" style="position: relative; width: 70px; height: 100%; float: left; background-color: rgba(0, 0, 0, 0.4);">
+      <canvas id="canvas" width="50" height="50" style="opacity: 0.8; margin-top: 5px; margin-bottom: 10px;     margin-left: 10px;"></canvas>
+      <div class="title" style="color: #999; text-align: center; font-size: 15px; font-family: sans-serif; margin-top: -10px;">Радиатор</div>
+   </div>
+   <div id="gears" class="gauge" style="position: relative; width: 70px; height: 100%; float: left; background-color: rgba(0, 0, 0, 0.4);">
+      <canvas id="canvas" width="50" height="50" style="opacity: 0.8; margin-top: 5px; margin-bottom: 10px;     margin-left: 10px;"></canvas>
+      <div class="title" style="color: #999; text-align: center; font-size: 15px; font-family: sans-serif; margin-top: -10px;">Шасси</div>
+   </div>
+</div>
+
 
 <div id="map" style="position: relative; width: 100%; height: 700px;">
    <div id='mapLayer_background'>
