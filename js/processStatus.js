@@ -14,7 +14,7 @@ processStatus.init=function(apiHost){
 processStatus.update=function(){
    clearTimeout(processStatus.timer);
    processStatus.dataFromApi(function(){
-      processStatus.timer=setTimeout(processStatus.update, 50);
+      processStatus.timer=setTimeout(processStatus.update, 500);
    });
 }
 
@@ -88,8 +88,8 @@ processStatus.data2group=function(data){
    forMe(groups, function(g){
       //to parent process
       var s=JSON.stringify(processStatus.dataGroupForRender[g]);
-      if(!s || s.hashCode()!=oldHash[g])
-         renderingQueue_hud(Object.make([[g, cloneMe(processStatus.dataGroupForRender[g])]]));
+      if(!s || s.hashCode()!==oldHash[g])
+         renderingQueue_hud(Object.make([[g, cloneMe(processStatus.dataGroupForRender[g], false, false, false)]]));
    })
 
 }

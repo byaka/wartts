@@ -9,7 +9,7 @@ renderHud.init=function(){
 
    renderHud.domLink.speed=$('.hud #speed #canvas')[0];
    renderHud.domLink.speedValue=$('.hud #speed #value');
-   renderHud.gauge.speed=gaugEx(renderHud.domLink.speed, {'shape':[0, 180, 10], 'size':[0.5, 1, 1], 'adjust':[0, 700, 0], 'colors':'#92FFBE', 'invert':true, 'padding':5, 'arrow':[0.8, 0.25], 'arrowWidth':10, 'arrowColor':'#000'});
+   renderHud.gauge.speed=gaugEx(renderHud.domLink.speed, {'shape':[0, 180, 10], 'size':[0.5, 1, 1], 'adjust':[0, 700, 0], 'colors':{0:'#ffffff', 50:'#FF9292', 200:'#FFED60', 250:'#92FFBE', 700:'#92FFBE'}, 'invert':true, 'padding':5, 'arrow':[0.8, 0.25], 'arrowWidth':10, 'arrowColor':'#000'});
 
    renderHud.domLink.flaps=$('.hud #flaps #canvas')[0];
    renderHud.gauge.flaps=gaugEx(renderHud.domLink.flaps, {'shape':[30, 300, 10], 'size':[0.5, 0.5, 0.5], 'adjust':[0, 1, 0], 'colors':{0:'#ffffff', 0.15:'#92FFBE', 1:'#FF9292'}, 'invert':false, 'padding':0, 'arrow':[0.55, 0.45], 'arrowWidth':10, 'arrowColor':'#000'});

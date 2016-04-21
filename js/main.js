@@ -1,13 +1,13 @@
 var initQueue=[];
 var settings={
    'debug':false,
-   'apiHost':'http://localhost:8111',
+   'apiHost':'',
+   'apiHostTmpl':'http://%s:8111', // 192.168.2.33   localhost
    'apiFake':false
-}
-var debug=false;
+};
 var domLink={};
 var renderingSettings={
-   'map':{'zoom':1, 'zoomMin':0.2, 'zoomMax':4, 'zoomStep':0.1, 'force':false, 'left':0, 'top':0, 'width':0, 'height':0, 'angle':0},
+   'map':{'zoom':1, 'zoomMin':0.2, 'zoomMax':4, 'zoomStep':0.1, 'force':false, 'left':0, 'top':0, 'width':0, 'height':0, 'angle':0, 'angleTrans':false, 'angleTransX':0, 'angleTransY':0, 'backgroundSaturate':0.15},
    'hud':{'force':false},
 };
 var renderingQueue={'map':{}, 'hud':{}};
@@ -54,6 +54,8 @@ function init_part1(){
 function init_settings(){
    var url=parseURL();
    if(Object.keys(url.params).inOf('fakeApi')) settings.apiFake=true;
+   if(Object.keys(url.params).inOf('debug')) settings.debug=true;
+   settings.apiHost=settings.apiHostTmpl.format(url.params.api|| 'localhost');
 }
 
 function init_part2(){
@@ -67,6 +69,8 @@ function init_part2(){
    domLink.mapLayer.playerCtx=domLink.mapLayer.player.getContext('2d');
    domLink.mapLayer.background=$('#mapLayer_background .canvas')[0];
    domLink.mapLayer.backgroundCtx=domLink.mapLayer.background.getContext('2d');
+   domLink.mapLayer.debug=$('#mapLayer_debug .canvas')[0];
+   domLink.mapLayer.debugCtx=domLink.mapLayer.debug.getContext('2d');
    //
    renderMap.init();
    renderHud.init();
@@ -85,13 +89,15 @@ function inited(){
 //==events
    Hamster(domLink.map[0]).wheel(function(e, d, dx, dy){
       e.preventDefault();
-      var old=renderingSettings.map.zoom;
-      renderingSettings.map.zoom+=renderingSettings.map.zoomStep*d;
-      correctZoom();
-      //
-      if(renderingSettings.map.zoom==old) return;
-      renderingSettings.map.force=true;
-      print('ZOOM', renderingSettings.map.zoom);
+      var s=renderingSettings.map.zoom+renderingSettings.map.zoomStep*d;
+      autoZoom('fitByObjects', {
+         'mapW':renderingSettings.map.width,
+         'mapH':renderingSettings.map.height,
+         'wrapW':domLink.map.innerWidth(),
+         'wrapH':domLink.map.innerHeight()
+      }, function(p){
+         p.zoom=renderingSettings.map.zoom+renderingSettings.map.zoomStep*d;
+      });
    })
 
    domLink.map.on('mousedown', function(e){
@@ -112,9 +118,7 @@ function inited(){
          if(tmp.deltaX==dx && tmp.deltaY==dy) return false;
          tmp.deltaX=dx;
          tmp.deltaY=dy;
-         renderingSettings.map.left=tmp.startX-tmp.hX-tmp.deltaX;
-         renderingSettings.map.top=tmp.startY-tmp.hY-tmp.deltaY;
-         renderingSettings.map.force=true;
+         autoPan('set', {'x':tmp.startX-tmp.hX-tmp.deltaX, 'y':tmp.startY-tmp.hY-tmp.deltaY})
       });
       $(window).on('mouseup', function(e){
          $(window).off('mousemove');
@@ -128,15 +132,17 @@ function inited(){
    processStatus.init(settings.apiHost);
    animationReady(function(time){
    //==map layers
-      forMe(['dinamic', 'background', 'player', 'static'], function(l){
+      forMe(['dinamic', 'background', 'player', 'static', 'debug'], function(l){
          //clear rendering queue
+         if(!renderMap.layerDrawer[l])
+            return print('!! Unknown map-layer', l);
          var data=renderingQueue.map[l];
          renderingQueue.map[l]=null;
          if(!data && renderingSettings.map.force)
             data=renderingQueueOld.map[l];
          if(data){ //call rendering if data exist
             renderingQueueOld.map[l]=data;
-            renderMap[l](domLink.mapLayer[l], domLink.mapLayer[l+'Ctx'], data, renderingSettings.map, true);
+            renderMap.layerDrawer[l](domLink.mapLayer[l], domLink.mapLayer[l+'Ctx'], data, renderingSettings.map, true);
          }
       })
    //==HUD
@@ -157,18 +163,23 @@ function inited(){
    });
 }
 
-function correctZoom(){
-   if(renderingSettings.map.zoom<renderingSettings.map.zoomMin) renderingSettings.map.zoom=renderingSettings.map.zoomMin;
-   if(renderingSettings.map.zoom>renderingSettings.map.zoomMax) renderingSettings.map.zoom=renderingSettings.map.zoomMax;
-}
-
-function renderingQueue_objects(data){
-   if(data.dinamic)
-      renderingQueue.map.dinamic=data.dinamic;
-   if(data.player)
-      renderingQueue.map.player=data.player;
-   if(data.static)
-      renderingQueue.map.static=data.static;
+function renderingQueue_objects(data, type){
+   var tFunc0=function(l, tArr){
+      if(!['player', 'static', 'dinamic', 'debug'].inOf(l)) return;
+      if(!renderingQueue.map[l]){
+         renderingQueue.map[l]=isArray(tArr)? tArr: [tArr];
+      }else if(isArray(renderingQueue.map[l])){
+         if(isArray(tArr))
+            renderingQueue.map[l]=renderingQueue.map[l].concat(tArr);
+         else
+            renderingQueue.map[l].push(tArr);
+      }else print('! somethink goes wrong');
+   }
+   forMe(data, tFunc0);
+   // if(data.player)
+   //    renderingQueue.map.player=data.player;
+   // if(data.static)
+   //    renderingQueue.map.static=data.static;
 }
 
 function renderingQueue_hud(data){
@@ -182,8 +193,9 @@ function renderingQueue_map(data){
    clearTimeout(renderingQueue_map.timer);
    initQueue.push('__map__');
    var anticache=randomEx();
-   var url=settings.apiHost+'/map.img?%s'.format(anticache);
+   var url=settings.apiHost+'/map.img?'+anticache;
    if(settings.apiFake) url='img/map.jpg';
+   print('MAP_LOADING')
    var img=new Image();
    img.id=anticache;
    img.onload=function(){
@@ -193,72 +205,131 @@ function renderingQueue_map(data){
          renderingQueue_map.timer=setTimeout(renderingQueue_map, 5000);
          return;
       }
-      renderingQueue.map.background={'img':this, 'saturate':0.5, 'anticache':this.id};
-      renderingSettings.map.force=true;
+      renderingQueue.map.background={'img':this, 'saturate':renderingSettings.map.backgroundSaturate, 'anticache':this.id};
       //saturate background
       var s='grayscale(%s%%)'.format((1-renderingQueue.map.background.saturate)*100)
-      forMe(['filter', '-webkit-filter', '-moz-filter', '-ms-filter', '-o-filter'], function(n){domLink.mapLayer.background.style[n]=s});
+      forMe(['filter', '-webkit-filter', '-moz-filter', '-ms-filter', '-o-filter'], function(n){
+         domLink.mapLayer.background.style[n]=s;
+      });
       //save image size
       var w=this.width, h=this.height;
       renderingSettings.map.width=w;
       renderingSettings.map.height=h;
       //correct size of layers
       var mapW=domLink.map.innerWidth(), mapH=domLink.map.innerHeight();
-      forMe(['dinamic', 'background', 'player', 'static'], function(l){
+      forMe(['dinamic', 'background', 'player', 'static', 'debug'], function(l){
          domLink.mapLayer[l].width=mapW;
          domLink.mapLayer[l].height=mapH;
          // renderingQueueOld.map[l]=null;
       })
       //calc auto-zoom
-      autoZoom('fitByObjects', w, h, mapW, mapH, function(z){
-         renderingSettings.map.zoom=z;
-         correctZoom();
-      });
+      autoZoom('fitByObjects', {'mapW':w, 'mapH':h, 'wrapW':mapW, 'wrapH':mapH});
        //complited
       initQueue.splice(initQueue.indexOf('__map__'), 1);
    }
    img.src=url;
 }
 
-function autoZoom(type, mapW, mapH, wrapW, wrapH, cb){
+function correctZoom(zoom){
+   if(arguments.length){
+      if(zoom<renderingSettings.map.zoomMin) return renderingSettings.map.zoomMin;
+      if(zoom>renderingSettings.map.zoomMax) return renderingSettings.map.zoomMax;
+      return zoom;
+   }else{
+      if(renderingSettings.map.zoom<renderingSettings.map.zoomMin)
+         renderingSettings.map.zoom=renderingSettings.map.zoomMin;
+      if(renderingSettings.map.zoom>renderingSettings.map.zoomMax)
+         renderingSettings.map.zoom=renderingSettings.map.zoomMax;
+   }
+}
+
+function autoZoom(type, p, cb, isAutoPan, isAutoForce){
+   isAutoPan=isAutoPan===false? false: true;
+   isAutoForce=isAutoForce===false? false: true;
+   if(autoZoom.timer) print('READY FOR ZOOM');
    clearTimeout(autoZoom.timer);
-   if(type=='fitByMax'){
-      var mapSZ=max(mapW, mapH), wrapSZ=max(wrapW, wrapH);
-      var z=wrapSZ/mapSZ;
-   }else if(type=='fitByMin'){
-      var mapSZ=max(mapW, mapH), wrapSZ=min(wrapW, wrapH);
-      var z=wrapSZ/mapSZ;
-   }else if(type=='fitByObjects'){
-      if(!renderingQueueOld.map.dinamic || !renderingQueueOld.map.player || !renderingQueueOld.map.static){
+   autoZoom.timer=null;
+   if(type==='set'){ //nothing to change
+   }else if(type==='fitByMax'){
+      var mapSZ=max(p.mapW, p.mapH), wrapSZ=max(p.wrapW, p.wrapH);
+      p.zoom=wrapSZ/mapSZ;
+   }else if(type==='fitByMin'){
+      var mapSZ=max(p.mapW, p.mapH), wrapSZ=min(p.wrapW, p.wrapH);
+      p.zoom=wrapSZ/mapSZ;
+   }else if(type==='fitByObjects'){
+      if(!renderingQueueOld.map.dinamic && !renderingQueueOld.map.player && !renderingQueueOld.map.static){
          autoZoom.timer=setTimeout(function(){
-            autoZoom(type, mapW, mapH, wrapW, wrapH, cb);
+            autoZoom(type, p, cb, isAutoPan, isAutoForce);
          }, 500)
          return;
       }
-      print('READY FOR ZOOM')
       var tArr0=[].concat(renderingQueueOld.map.dinamic, renderingQueueOld.map.player, renderingQueueOld.map.static);
       var minX=99999999, minY=99999999, maxX=0, maxY=0;
       forMe(tArr0, function(o){
          if(isArray(o.x)){
             minX=min(minX, o.x[0], o.x[1]);
             minY=min(minY, o.y[0], o.y[1]);
-            maxX=min(maxX, o.x[0], o.x[1]);
-            maxY=min(maxY, o.y[0], o.y[1]);
+            maxX=max(maxX, o.x[0], o.x[1]);
+            maxY=max(maxY, o.y[0], o.y[1]);
          }else{
             minX=min(minX, o.x);
             minY=min(minY, o.y);
-            maxX=min(maxX, o.x);
-            maxY=min(maxY, o.y);
+            maxX=max(maxX, o.x);
+            maxY=max(maxY, o.y);
          }
       })
-      mapW=Math.abs(mapW*(maxX-minX));
-      mapH=Math.abs(mapH*(maxY-minY));
-      print('>', mapW, mapH)
-      var mapSZ=max(mapW, mapH), wrapSZ=min(wrapW, wrapH);
-      var z=wrapSZ/mapSZ;
+      if(settings.debug)
+         renderingQueue_objects({
+            'debug':{point:[[minX, minY], [maxX, minY], [maxX, maxY], [minX, maxY]], type:'polygon'}
+         });
+      p.x=minX;
+      p.y=minY;
+      p.mapW=Math.abs(p.mapW*(maxX-minX));
+      p.mapH=Math.abs(p.mapH*(maxY-minY));
+      // var mapSZ=max(p.mapW, p.mapH), wrapSZ=min(p.wrapW, p.wrapH);
+      var mapSZ=p.mapW, wrapSZ=p.wrapW;
+      p.zoom=wrapSZ/mapSZ;
+      p.zoom-=2*renderingSettings.map.zoomStep;
    }
-   if(cb) cb(z);
-   return z;
+   p.zoom=correctZoom(p.zoom);
+   if(cb) cb(p);
+   p.zoom=correctZoom(p.zoom);
+   // print('AUTO_ZOOM', type, p);
+   if(isNaN(p.zoom))
+      return print('!!! ERROR AUTO_ZOOM');
+   var oldZ=renderingSettings.map.zoom;
+   renderingSettings.map.zoom=p.zoom;
+   if(isAutoPan)
+      autoPan('center', p, null, isAutoForce);
+   if(isAutoForce && oldZ!==p.zoom)
+      renderingSettings.map.force=true;
+   return p.zoom;
+}
+
+function autoPan(type, p, cb, isAutoForce){
+   isAutoForce=isAutoForce===false? false: true;
+   renderingSettings.map.angleTrans=false;
+   if(type==='set'){ //nothing to change
+   }else if(type==='center'){
+      var w1=p.mapW*p.zoom, w2=p.wrapW-w1;
+      var h1=p.mapH*p.zoom, h2=p.wrapH-h1;
+      p.x=-1*renderingSettings.map.width*p.zoom*p.x;
+      p.y=-1*renderingSettings.map.height*p.zoom*p.y;
+      p.x+=w2/2;
+      p.y+=h2/2;
+      renderingSettings.map.angleTransX=(w2+w1)/2-p.x;
+      renderingSettings.map.angleTransY=(h2+h1)/2-p.y;
+      renderingSettings.map.angleTrans=true;
+   }
+   if(cb) cb(p);
+   // print('AUTO_PAN', type, p);
+   if(isNaN(p.x) || isNaN(p.y))
+      return print('!!! ERROR AUTO_PAN');
+   var oldX=renderingSettings.map.left, oldY=renderingSettings.map.top;
+   renderingSettings.map.left=p.x;
+   renderingSettings.map.top=p.y;
+   if(isAutoForce && (oldX!==p.x || oldY!==p.y))
+      renderingSettings.map.force=true;
 }
 
 documentReady(init_part1);

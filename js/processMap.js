@@ -15,9 +15,9 @@ processMap.init=function(apiHost){
 processMap.update=function(){
    clearTimeout(processMap.timer);
    processMap.dataFromApi(function(){
-      processMap.timer=setTimeout(processMap.update, 50);
+      processMap.timer=setTimeout(processMap.update, 150);
    });
-   if(getms(true)-processMap.isMapChanged.lastTime>2000){
+   if(getms(true)-processMap.isMapChanged.lastTime>5000){
       processMap.isMapChanged.lastTime=getms(true);
       processMap.isMapChanged();
    }
@@ -127,7 +127,7 @@ processMap.data2group=function(data){
       //to parent process
       var s=JSON.stringify(processMap.dataGroupForRender[g]);
       if(!s || s.hashCode()!=oldHash[g])
-         renderingQueue_objects(Object.make([[g, cloneMe(processMap.dataGroupForRender[g])]]));
+         renderingQueue_objects(Object.make([[g, cloneMe(processMap.dataGroupForRender[g], false, false, false)]]));
    })
 }
 
