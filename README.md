@@ -10,6 +10,8 @@ Repositore with discussion in **RUSSIAN** [here](https://github.com/byaka/WarThu
 ### Hosted version
 Feel free to use it http://byaka.name/wartts/.
 
+If you want to use it on non-local device (for example from Tablet PC) use url ```http://byaka.name/wartts/#api=<IP>``` where <IP> is IP of PC with running game.
+
 For testing (without running game) http://byaka.name/wartts/#fakeApi.
 
 ### Roadmap
