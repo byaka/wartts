@@ -1,7 +1,7 @@
 
 # WarThunder Tactical Screen
 
-Tactical interface for game [WarThunder](https://warthunder.com/en) with additional functions and futures. Useful on second monitor or tablet.
+Tactical interface for game [WarThunder](https://warthunder.com/en) with additional functions and futures. Useful on second monitor or Tablet PC (tested on Android 4.0.1 7" tablet with Chrome).
 
 Any suggections, bug-reports and help are welcome.
 
