@@ -9,13 +9,13 @@ var processMap={
 
 processMap.init=function(apiHost){
    processMap.apiHost=apiHost;
-   processMap.timer=setTimeout(processMap.update, 500);
+   processMap.timer=setTimeout(processMap.update, 100);
 }
 
 processMap.update=function(){
    clearTimeout(processMap.timer);
    processMap.dataFromApi(function(){
-      processMap.timer=setTimeout(processMap.update, 150);
+      processMap.timer=setTimeout(processMap.update, 100);
    });
    if(getms(true)-processMap.isMapChanged.lastTime>5000){
       processMap.isMapChanged.lastTime=getms(true);
@@ -24,22 +24,6 @@ processMap.update=function(){
 }
 
 processMap.isMapChanged=function(){
-   // var url=processMap.apiHost+'/mission.json';
-   // if(processMap.apiFake) //if fakeApi enabled, we get API request from github's example
-   //    url='https://raw.githubusercontent.com/byaka/WarThunderTacticalScreen_discuss/master/API/mission.js';
-   // ajaxMe(url, function(data, status, r){
-   //    processMap.isMapChanged.lastTime=getms(true);
-   //    if(!data) //empty request
-   //       return;
-   //    // var data=JSON.parse(data);
-   //    var missionHash=data.hashCode();
-   //    if(processMap.missionHash!==missionHash){
-   //       processMap.missionHash=missionHash;
-   //       print('MAP CHANGED')
-   //       renderingQueue_map()
-   //    }
-   //    processMap.isMapChanged.lastTime=getms(true);
-   // })
    var rCount=0, dataAll={}, url=[];
    if(processMap.apiFake){ //if fakeApi enabled, we get API request from github's example
       var s='https://raw.githubusercontent.com/byaka/WarThunderTacticalScreen_discuss/master/API';
@@ -63,7 +47,7 @@ processMap.isMapChanged=function(){
          processMap.mapHash[u]=h;
          print('MAP CHANGED');
          changed=true;
-         renderingQueue_map();
+         renderingQueue_mapBackground();
          processMap.isMapChanged.lastTime=getms(true);
       })
    }
@@ -117,7 +101,9 @@ processMap.data2group=function(data){
    //processing
    forMe(data, function(o){
       if(o.icon=='Player')
-         processMap.data2group_player(o, 'self');
+         processMap.data2group_player(o, 'neutral');
+      else if(processMap.calcRel(o)==='friend')
+         processMap.data2group_player(o, 'friend');
       else if(['aircraft', 'ground_model', 'airfield'].inOf(o.type))
          processMap.data2group_dinamic(o);
       else if(['capture_zone', 'respawn_base_bomber', 'respawn_base_fighter'].inOf(o.type))
@@ -127,15 +113,17 @@ processMap.data2group=function(data){
       //to parent process
       var s=JSON.stringify(processMap.dataGroupForRender[g]);
       if(!s || s.hashCode()!=oldHash[g])
-         renderingQueue_objects(Object.make([[g, cloneMe(processMap.dataGroupForRender[g], false, false, false)]]));
+         renderingQueue_mapObjects(Object.make([[g, cloneMe(processMap.dataGroupForRender[g], false, false, false)]]));
    })
 }
 
 processMap.calcRel=function(o, oo){
    //get relation-ship
-   if(['#fffffa'].inOf(o.color.toLowerCase())) oo.isNeutral=true;
-   else if(['#1952ff'].inOf(o.color.toLowerCase())) oo.isEnemy=false;
-   else if(['#ff0d00', '#e10b00', '#f40c00'].inOf(o.color.toLowerCase())) oo.isEnemy=true;
+   var c=o.color.toLowerCase();
+   if(['#fffffa'].inOf(c)) oo? oo.isNeutral=true: oo='neutral';
+   else if(['#60ff37'].inOf(c)) oo? oo.isFriend=true: oo='friend';
+   else if(['#1952ff'].inOf(c)) oo? oo.isEnemy=false: oo='ally';
+   else if(['#ff0d00', '#e10b00', '#f40c00'].inOf(c)) oo? oo.isEnemy=true: oo='enemy';
    return oo;
 }
 

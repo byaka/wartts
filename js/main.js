@@ -7,7 +7,7 @@ var settings={
 };
 var domLink={};
 var renderingSettings={
-   'map':{'zoom':1, 'zoomMin':0.2, 'zoomMax':4, 'zoomStep':0.1, 'force':false, 'left':0, 'top':0, 'width':0, 'height':0, 'angle':0, 'angleTrans':false, 'angleTransX':0, 'angleTransY':0, 'backgroundSaturate':0.15},
+   'map':{'zoom':1, 'zoomMin':0.5, 'zoomMax':7, 'zoomStep':0.01, 'left':0, 'top':0, 'width':0, 'height':0, 'angle':0, 'angleTrans':false, 'angleTransX':0, 'angleTransY':0, 'backgroundSaturate':0.3, 'force':false},
    'hud':{'force':false},
 };
 var renderingQueue={'map':{}, 'hud':{}};
@@ -71,6 +71,7 @@ function init_part2(){
    domLink.mapLayer.backgroundCtx=domLink.mapLayer.background.getContext('2d');
    domLink.mapLayer.debug=$('#mapLayer_debug .canvas')[0];
    domLink.mapLayer.debugCtx=domLink.mapLayer.debug.getContext('2d');
+   domLink.loading=$('#loading');
    //
    renderMap.init();
    renderHud.init();
@@ -130,6 +131,7 @@ function inited(){
    processMap.init(settings.apiHost);
    processStatus.apiFake=settings.apiFake;
    processStatus.init(settings.apiHost);
+   domLink.loading.addClass('disabled');
    animationReady(function(time){
    //==map layers
       forMe(['dinamic', 'background', 'player', 'static', 'debug'], function(l){
@@ -163,7 +165,7 @@ function inited(){
    });
 }
 
-function renderingQueue_objects(data, type){
+function renderingQueue_mapObjects(data, type){
    var tFunc0=function(l, tArr){
       if(!['player', 'static', 'dinamic', 'debug'].inOf(l)) return;
       if(!renderingQueue.map[l]){
@@ -176,10 +178,6 @@ function renderingQueue_objects(data, type){
       }else print('! somethink goes wrong');
    }
    forMe(data, tFunc0);
-   // if(data.player)
-   //    renderingQueue.map.player=data.player;
-   // if(data.static)
-   //    renderingQueue.map.static=data.static;
 }
 
 function renderingQueue_hud(data){
@@ -189,25 +187,25 @@ function renderingQueue_hud(data){
       renderingQueue.hud.static=data.static;
 }
 
-function renderingQueue_map(data){
-   clearTimeout(renderingQueue_map.timer);
+function renderingQueue_mapBackground(data){
+   clearTimeout(renderingQueue_mapBackground.timer);
    initQueue.push('__map__');
    var anticache=randomEx();
    var url=settings.apiHost+'/map.img?'+anticache;
    if(settings.apiFake) url='img/map.jpg';
-   print('MAP_LOADING')
+   print('MAP_LOADING');
    var img=new Image();
    img.id=anticache;
    img.onload=function(){
       img.onload=null;
       if(this.width<100){ //to early, map not loaded yet
          initQueue.splice(initQueue.indexOf('__map__'), 1);
-         renderingQueue_map.timer=setTimeout(renderingQueue_map, 5000);
+         renderingQueue_mapBackground.timer=setTimeout(renderingQueue_mapBackground, 5000);
          return;
       }
       renderingQueue.map.background={'img':this, 'saturate':renderingSettings.map.backgroundSaturate, 'anticache':this.id};
       //saturate background
-      var s='grayscale(%s%%)'.format((1-renderingQueue.map.background.saturate)*100)
+      var s='grayscale(%s%%)'.format((1-renderingQueue.map.background.saturate)*100);
       forMe(['filter', '-webkit-filter', '-moz-filter', '-ms-filter', '-o-filter'], function(n){
          domLink.mapLayer.background.style[n]=s;
       });
@@ -257,10 +255,11 @@ function autoZoom(type, p, cb, isAutoPan, isAutoForce){
       var mapSZ=max(p.mapW, p.mapH), wrapSZ=min(p.wrapW, p.wrapH);
       p.zoom=wrapSZ/mapSZ;
    }else if(type==='fitByObjects'){
-      if(!renderingQueueOld.map.dinamic && !renderingQueueOld.map.player && !renderingQueueOld.map.static){
+      // if(!renderingQueueOld.map.dinamic && !renderingQueueOld.map.player && !renderingQueueOld.map.static){
+      if(!renderingQueueOld.map.player){
          autoZoom.timer=setTimeout(function(){
             autoZoom(type, p, cb, isAutoPan, isAutoForce);
-         }, 500)
+         }, 1000);
          return;
       }
       var tArr0=[].concat(renderingQueueOld.map.dinamic, renderingQueueOld.map.player, renderingQueueOld.map.static);
@@ -279,7 +278,7 @@ function autoZoom(type, p, cb, isAutoPan, isAutoForce){
          }
       })
       if(settings.debug)
-         renderingQueue_objects({
+         renderingQueue_mapObjects({
             'debug':{point:[[minX, minY], [maxX, minY], [maxX, maxY], [minX, maxY]], type:'polygon'}
          });
       p.x=minX;
@@ -287,9 +286,12 @@ function autoZoom(type, p, cb, isAutoPan, isAutoForce){
       p.mapW=Math.abs(p.mapW*(maxX-minX));
       p.mapH=Math.abs(p.mapH*(maxY-minY));
       // var mapSZ=max(p.mapW, p.mapH), wrapSZ=min(p.wrapW, p.wrapH);
-      var mapSZ=p.mapW, wrapSZ=p.wrapW;
+      if(p.wrapW-p.mapW<p.wrapH-p.mapH)
+         var mapSZ=p.mapW, wrapSZ=p.wrapW;
+      else
+         var mapSZ=p.mapH, wrapSZ=p.wrapH;
       p.zoom=wrapSZ/mapSZ;
-      p.zoom-=2*renderingSettings.map.zoomStep;
+      p.zoom-=3*renderingSettings.map.zoomStep;
    }
    p.zoom=correctZoom(p.zoom);
    if(cb) cb(p);

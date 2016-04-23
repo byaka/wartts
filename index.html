@@ -2,11 +2,14 @@
 <html>
 <head>
    <title>WarThunder Tactical screen</title>
-   <script src="//code.jquery.com/jquery-2.2.0.min.js"></script>
+   <link href="css/main.css" rel="stylesheet">
+   <script src="//buber.ru/js/jquery-2.2.3.min.js"></script>
    <script src="//buber.ru/js/functionsex.js"></script>
    <script src="js/main.js"></script>
 </head>
 <body style='margin: 0; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; cursor: default;position: absolute; width: 100%; height: 100%;'>
+
+<div id="loading" style="position: absolute; width: 100%; height: 100%; background-color: white; z-index: 99999;"></div>
 
 <div class="hud" style='pointer-events: none; z-index: 100; position: absolute; width: 100%; height: 140px;'>
    <div id="vspeed" class="gauge" style="position: relative; width: 200px; height: 100%; float: left; background-color: rgba(0, 0, 0, 0.4);">
@@ -49,10 +52,10 @@
    <div id='mapLayer_static'>
       <canvas class="canvas" style="position: absolute; width: 100%; height: 100%;"></canvas>
    </div>
-   <div id='mapLayer_player'>
+   <div id='mapLayer_dinamic'>
       <canvas class="canvas" style="position: absolute; width: 100%; height: 100%;"></canvas>
    </div>
-   <div id='mapLayer_dinamic'>
+   <div id='mapLayer_player'>
       <canvas class="canvas" style="position: absolute; width: 100%; height: 100%;"></canvas>
    </div>
    <div id='mapLayer_debug'>

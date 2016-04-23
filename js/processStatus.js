@@ -8,7 +8,7 @@ var processStatus={
 
 processStatus.init=function(apiHost){
    processStatus.apiHost=apiHost;
-   processStatus.timer=setTimeout(processStatus.update, 500);
+   processStatus.timer=setTimeout(processStatus.update, 100);
 }
 
 processStatus.update=function(){

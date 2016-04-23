@@ -14,7 +14,8 @@ function imageColoring(url, color, cb){
          var data={'img':new Image(), 'original':canvas2pixels(), 'new':canvas2pixels()};
          data.img.onload=function(){
             res[id]=this;
-            if(Object.keys(res).length<Object.keys(color).length) return;
+            print('IMAGE_COLORED', url, id, Object.keys(res).length, Object.keys(color).length)
+            if(Object.keys(res).length<=Object.keys(color).length) return;
             tmpCanvasCtx1.clearRect(0, 0, tmpCanvas1.width, tmpCanvas1.height);
             cb(res);
          }
@@ -49,7 +50,6 @@ function imageSaturation(url, s, cb){
       tFunc(null, url);
    }
 }
-
 
 function image2canvas(img){
    tmpCanvas1.width=img.width;
@@ -93,17 +93,17 @@ function changeSaturation(data, sv){
    var iz = (1 - sv)*luB + sv;
 
    for(var i=0, l=data.new.data.length; i<l; i+=4){
-       var red = data.new.data[i]; // Extract original red color [0 to 255]. Similarly for green and blue below
-       var green = data.new.data[i + 1];
-       var blue = data.new.data[i + 2];
+      var red = data.new.data[i]; // Extract original red color [0 to 255]. Similarly for green and blue below
+      var green = data.new.data[i + 1];
+      var blue = data.new.data[i + 2];
 
-       var saturatedRed = (az*red + bz*green + cz*blue);
-       var saturatedGreen = (dz*red + ez*green + fz*blue);
-       var saturateddBlue = (gz*red + hz*green + iz*blue);
+      var saturatedRed = (az*red + bz*green + cz*blue);
+      var saturatedGreen = (dz*red + ez*green + fz*blue);
+      var saturateddBlue = (gz*red + hz*green + iz*blue);
 
-       data.new.data[i] = saturatedRed;
-       data.new.data[i + 1] = saturatedGreen;
-       data.new.data[i + 2] = saturateddBlue;
+      data.new.data[i] = saturatedRed;
+      data.new.data[i + 1] = saturatedGreen;
+      data.new.data[i + 2] = saturateddBlue;
    }
    tmpCanvas2.width=tmpCanvas1.width;
    tmpCanvas2.height=tmpCanvas1.height;

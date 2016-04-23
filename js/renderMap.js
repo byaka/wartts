@@ -14,8 +14,8 @@ var renderMap={
       'capture_default':'img/capture_default.png',
       'windrose':'img/windrose.png'
    },
-   'color':{'friend':'#0dff0d', 'ally':'#1040ff', 'enemy':'#ff0d0d', 'neutral':'#f0f0f0'},
-   'imageColoringBlacklist':['air_player', 'windrose'],
+   'color':{'friend':'#0AD00A', 'ally':'#1040ff', 'enemy':'#E20B0B', 'neutral':'#f0f0f0'},
+   'imageColoringBlacklist':[],
    'layerDrawer':{}
 };
 
@@ -28,6 +28,7 @@ renderMap.init=function(){
          var img=new Image();
          img.onload=function(){
             renderMap.image[name]=this;
+            print('IMAGE_READY', name);
             initQueue.splice(initQueue.indexOf(name), 1);
          }
          img.src=url;
@@ -35,6 +36,7 @@ renderMap.init=function(){
          initQueue.push(name);
          imageColoring(url, renderMap.color, function(r){
             renderMap.image[name]=r;
+            print('IMAGE_READY', name);
             initQueue.splice(initQueue.indexOf(name), 1);
          })
       }
@@ -103,7 +105,7 @@ renderMap.layerDrawer.player=function(canvas, canvasCtx, data, setts, clear){
    //iterate objects
    forMe(data, function(o){
       if(!renderMap.image[o.icon]) return;
-      var img=renderMap.image[o.icon];
+      var img=renderMap.image[o.icon][o.color];
       if(!img) return;
       //calc coords
       var x=mapW*o.x+rotated.x;
@@ -115,23 +117,23 @@ renderMap.layerDrawer.player=function(canvas, canvasCtx, data, setts, clear){
       //rotate canvas by direction's angle from position's point
       renderMap.rotateCanvas(canvas, canvasCtx, setts, o.dir, true, x, y);
       //draw future path
-      canvasCtx.globalAlpha=0.6;
+      canvasCtx.globalAlpha=0.95;
       canvasCtx.beginPath();
       canvasCtx.moveTo(x, y+imgDY);
-      canvasCtx.lineTo(x, y+imgDY-200*setts.zoom)
+      canvasCtx.lineTo(x, y+imgDY-500*setts.zoom)
       canvasCtx.closePath()
       canvasCtx.lineWidth=1;
-      canvasCtx.strokeStyle=renderMap.color.neutral;
+      canvasCtx.strokeStyle=renderMap.color[o.color];
       canvasCtx.lineCap="round";
       canvasCtx.setLineDash([5, 15]);
       canvasCtx.stroke()
       //draw image with scalling
-      canvasCtx.globalAlpha=0.9;
+      canvasCtx.globalAlpha=0.7;
       canvasCtx.drawImage(img, x+imgDX, y+imgDY, imgW, imgH);
       //draw windrose
-      // canvasCtx.globalAlpha=0.5;
+      // canvasCtx.globalAlpha=0.2;
       // var wrw=200*Math.sqrt(1+setts.zoom);
-      // canvasCtx.drawImage(renderMap.image.windrose, x-wrw/2, y-wrw/2, wrw, wrw);
+      // canvasCtx.drawImage(renderMap.image.windrose[o.color], x-wrw/2, y-wrw/2, wrw, wrw);
       //restore state
       canvasCtx.restore();
    })
