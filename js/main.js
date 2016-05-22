@@ -291,7 +291,7 @@ function autoZoom(type, p, cb, isAutoPan, isAutoForce){
       else
          var mapSZ=p.mapH, wrapSZ=p.wrapH;
       p.zoom=wrapSZ/mapSZ;
-      p.zoom-=3*renderingSettings.map.zoomStep;
+      p.zoom-=5*renderingSettings.map.zoomStep;
    }
    p.zoom=correctZoom(p.zoom);
    if(cb) cb(p);

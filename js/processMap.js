@@ -62,7 +62,7 @@ processMap.dataFromApi=function(cb){
    var rCount=0, dataAll=[], url=[];
    if(processMap.apiFake){ //if fakeApi enabled, we get API request from github's example
       var s='https://raw.githubusercontent.com/byaka/WarThunderTacticalScreen_discuss/master/API';
-      url.push(s+'/mapObjects.js');
+      url.push(s+'/mapObjects6.js');
    }else{
       url.push(processMap.apiHost+'/map_obj.json');
    }
@@ -104,9 +104,11 @@ processMap.data2group=function(data){
          processMap.data2group_player(o, 'neutral');
       else if(processMap.calcRel(o)==='friend')
          processMap.data2group_player(o, 'friend');
+      else if(Math.abs(o.ex)>=1 || Math.abs(o.ey)>=1 || Math.abs(o.sx)>=1 || Math.abs(o.sy)>=1 || Math.abs(o.x)>=1 || Math.abs(o.y)>=1)
+         return; //invisible
       else if(['aircraft', 'ground_model', 'airfield'].inOf(o.type))
          processMap.data2group_dinamic(o);
-      else if(['capture_zone', 'respawn_base_bomber', 'respawn_base_fighter'].inOf(o.type))
+      else if(['capture_zone', 'respawn_base_bomber', 'respawn_base_fighter', 'defending_point', 'bombing_point'].inOf(o.type)) //, 'respawn_base_tank'
          processMap.data2group_static(o);
    })
    forMe(groups, function(g){
@@ -121,7 +123,7 @@ processMap.calcRel=function(o, oo){
    //get relation-ship
    var c=o.color.toLowerCase();
    if(['#fffffa'].inOf(c)) oo? oo.isNeutral=true: oo='neutral';
-   else if(['#60ff37'].inOf(c)) oo? oo.isFriend=true: oo='friend';
+   else if(['#60ff37', '#aaff8e'].inOf(c)) oo? oo.isFriend=true: oo='friend';
    else if(['#1952ff'].inOf(c)) oo? oo.isEnemy=false: oo='ally';
    else if(['#ff0d00', '#e10b00', '#f40c00'].inOf(c)) oo? oo.isEnemy=true: oo='enemy';
    return oo;
@@ -131,6 +133,13 @@ processMap.data2group_player=function(o, id){
    var oo={'typeMain':'', 'typeSub':'', 'id':id, 'x':{'real':[]}, 'y':{'real':[]}, 'dir':{'real':[]}};
    if(o.type=='aircraft'){
       oo.typeMain='air';
+      //get coords
+      oo.x.real.push(o.x);
+      oo.y.real.push(o.y);
+      //calc direction
+      oo.dir.real.push(Math.atan2(o.dx, -o.dy));
+   }else if(o.type=='ground_model'){
+      oo.typeMain='ground';
       //get coords
       oo.x.real.push(o.x);
       oo.y.real.push(o.y);
@@ -146,29 +155,34 @@ processMap.data2group_player=function(o, id){
 
 processMap.data2group_dinamic=function(o){
    var oo={'typeMain':'', 'typeSub':'', 'isNeutral':'', 'isEnemy':'', 'isFriend':'', 'x':{'real':[]}, 'y':{'real':[]}, 'dir':{'real':[]}};
-   if(o.type=='aircraft'){
+   if(o.type==='aircraft'){
       oo.typeMain='air';
       //get sub-type
-      if(o.icon=='Bomber') oo.typeSub='bomber';
+      if(o.icon==='Bomber') oo.typeSub='bomber';
+      else if(o.icon==='Assault') oo.typeSub='assault';
       processMap.calcRel(o, oo);
       //get coords
       oo.x.real.push(o.x);
       oo.y.real.push(o.y);
       //calc direction
       oo.dir.real.push(Math.atan2(o.dx, -o.dy));
-   }else if(o.type=='ground_model'){
+   }else if(o.type==='ground_model'){
       if(['Ship'].inOf(o.icon)) oo.typeMain='sea';
       else oo.typeMain='ground';
-      if(o.icon=='Wheeled') oo.typeSub='wheeled';
-      else if(o.icon=='Airdefence') oo.typeSub='airdefence';
-      else if(o.icon=='Tracked') oo.typeSub='tank';
+      if(o.icon==='Wheeled') oo.typeSub='wheeled';
+      else if(o.icon==='Airdefence') oo.typeSub='airdefence';
+      else if(o.icon==='Tracked') oo.typeSub='tank';
+      else if(o.icon==='LightTank') oo.typeSub='light';
+      else if(o.icon==='MediumTank') oo.typeSub='medium';
+      else if(o.icon==='HeavyTank') oo.typeSub='heavy';
+      else if(o.icon==='DestroyerTank') oo.typeSub='destroyer';
       processMap.calcRel(o, oo);
       //get coords
       oo.x.real.push(o.x);
       oo.y.real.push(o.y);
       //calc direction
       oo.dir.real.push(Math.atan2(o.dx, -o.dy));
-   }else if(o.type=='airfield'){
+   }else if(o.type==='airfield'){
       oo.typeMain='airfield';
       processMap.calcRel(o, oo);
       //get coords
@@ -181,7 +195,7 @@ processMap.data2group_dinamic=function(o){
    //prep for render
    var oor={'icon':'', 'color':'', 'x':oo.x.real.last(), 'y':oo.y.real.last(), 'dir':oo.dir.real.last()};
    if(oo.isNeutral) oor.color='neutral';
-   else if(oo.isFriend) oor.color='friend'
+   else if(oo.isFriend) oor.color='friend';
    else oor.color=oo.isEnemy? 'enemy': 'ally';
    oor.icon='%s_%s'.format(oo.typeMain, (oo.typeSub|| 'default'));
    processMap.dataGroupForRender.dinamic.push(oor);

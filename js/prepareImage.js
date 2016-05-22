@@ -14,7 +14,6 @@ function imageColoring(url, color, cb){
          var data={'img':new Image(), 'original':canvas2pixels(), 'new':canvas2pixels()};
          data.img.onload=function(){
             res[id]=this;
-            print('IMAGE_COLORED', url, id, Object.keys(res).length, Object.keys(color).length)
             if(Object.keys(res).length<=Object.keys(color).length) return;
             tmpCanvasCtx1.clearRect(0, 0, tmpCanvas1.width, tmpCanvas1.height);
             cb(res);

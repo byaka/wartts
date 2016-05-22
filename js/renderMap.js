@@ -1,9 +1,15 @@
 var renderMap={
    'image':{
       'air_player':'img/player.png',
+      'ground_player':'img/player.png',
       'air_default':'img/plane_default.png',
       'air_bomber':'img/plane_bomber.png',
+      'air_assault':'img/plane_assault.png',
       'ground_default':'img/ground_default.png',
+      'ground_light':'img/ground_light.png',
+      'ground_medium':'img/ground_medium.png',
+      'ground_heavy':'img/ground_heavy.png',
+      'ground_destroyer':'img/ground_destroyer.png',
       'ground_wheeled':'img/ground_wheeled.png',
       'ground_airdefence':'img/ground_airdefence.png',
       'ground_tank':'img/ground_tank.png',
@@ -28,7 +34,6 @@ renderMap.init=function(){
          var img=new Image();
          img.onload=function(){
             renderMap.image[name]=this;
-            print('IMAGE_READY', name);
             initQueue.splice(initQueue.indexOf(name), 1);
          }
          img.src=url;
@@ -36,7 +41,6 @@ renderMap.init=function(){
          initQueue.push(name);
          imageColoring(url, renderMap.color, function(r){
             renderMap.image[name]=r;
-            print('IMAGE_READY', name);
             initQueue.splice(initQueue.indexOf(name), 1);
          })
       }
