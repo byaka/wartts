@@ -2,5 +2,6 @@
   "name": "Wartts",
   "tagline": "WarThunder Tactical Screen",
   "body": "\r\n# WarThunder Tactical Screen\r\n\r\nTactical interface for game [WarThunder](https://warthunder.com/en) with additional functions and futures. Useful on second monitor or Tablet PC (tested on Android 4.0.1 7\" tablet with Chrome).\r\n\r\nAny suggections, bug-reports and help are welcome.\r\n\r\nMy email ```byaka.life<dog>gmail.com```.\r\n\r\nRepositore with discussion in **RUSSIAN** [here](https://github.com/byaka/WarThunderTacticalScreen_discuss).\r\n\r\n### Hosted version\r\nFeel free to use it http://byaka.name/wartts/.\r\n\r\nIf you want to use it on non-local device (for example from Tablet PC) use url ```http://byaka.name/wartts/#api=<IP>``` where ```<IP>``` is IP of PC with running game.\r\n\r\nFor testing (without running game) http://byaka.name/wartts/#fakeApi.\r\n\r\n### Roadmap\r\n\r\n Please see actual [here](https://github.com/byaka/wartts/issues/1)\r\n",
+  "google": "UA-64341792-4",
   "note": "Don't delete this file! It's used internally to help with page regeneration."
 }
