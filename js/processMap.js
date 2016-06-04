@@ -62,7 +62,7 @@ processMap.dataFromApi=function(cb){
    var rCount=0, dataAll=[], url=[];
    if(processMap.apiFake){ //if fakeApi enabled, we get API request from github's example
       var s='https://raw.githubusercontent.com/byaka/WarThunderTacticalScreen_discuss/master/API';
-      url.push(s+'/mapObjects6.js');
+      url.push(s+'/mapObjects7.js');
    }else{
       url.push(processMap.apiHost+'/map_obj.json');
    }

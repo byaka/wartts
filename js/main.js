@@ -285,12 +285,16 @@ function autoZoom(type, p, cb, isAutoPan, isAutoForce){
       p.y=minY;
       p.mapW=Math.abs(p.mapW*(maxX-minX));
       p.mapH=Math.abs(p.mapH*(maxY-minY));
-      // var mapSZ=max(p.mapW, p.mapH), wrapSZ=min(p.wrapW, p.wrapH);
-      if(p.wrapW-p.mapW<p.wrapH-p.mapH)
-         var mapSZ=p.mapW, wrapSZ=p.wrapW;
-      else
-         var mapSZ=p.mapH, wrapSZ=p.wrapH;
+      //first step
+      var mapSZ=p.mapH, wrapSZ=p.wrapH;
       p.zoom=wrapSZ/mapSZ;
+      //second step
+      if(p.mapW*p.zoom>p.wrapW){
+         var mapSZ=p.mapW, wrapSZ=p.wrapW;
+         p.zoom=wrapSZ/mapSZ;
+      }
+      //micro-correction
+      //! нужен более хитрый способ, текущий плохо работает на малом зуме
       p.zoom-=5*renderingSettings.map.zoomStep;
    }
    p.zoom=correctZoom(p.zoom);
