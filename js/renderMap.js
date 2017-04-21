@@ -5,11 +5,11 @@ var renderMap={
       'air_default':'img/plane_default.png',
       'air_bomber':'img/plane_bomber.png',
       'air_assault':'img/plane_assault.png',
-      'ground_default':'img/ground_default.png',
       'ground_light':'img/ground_light.png',
       'ground_medium':'img/ground_medium.png',
       'ground_heavy':'img/ground_heavy.png',
       'ground_destroyer':'img/ground_destroyer.png',
+      'ground_default':'img/ground_default.png',
       'ground_wheeled':'img/ground_wheeled.png',
       'ground_airdefence':'img/ground_airdefence.png',
       'ground_tank':'img/ground_tank.png',
@@ -24,6 +24,25 @@ var renderMap={
    'imageColoringBlacklist':[],
    'layerDrawer':{}
 };
+
+renderMap.legendMap={
+   'air_player':'Player',
+   'air_default':'Aircraft',
+   'air_bomber':'Aircraft (bomber)',
+   'air_assault':'Aircraft (heavy-fighter)',
+   'ground_default':'Ground (unknown)',
+   'ground_light':'Tank (light)',
+   'ground_medium':'Tank (medium)',
+   'ground_heavy':'Tank (heavy)',
+   'ground_destroyer':'Tank (destroyer)',
+   'ground_wheeled':'Ground (wheeled)',
+   'ground_airdefence':'Ground (anti-air)',
+   'sea_default':'Ship',
+   'respawn_bomber':'Respawn (bomber)',
+   'respawn_fighter':'Respawn (fighter)',
+   'respawn_tank':'Respawn (tank)',
+   'capture_default':'Capture-point',
+}
 
 renderMap.init=function(){
    //load and prepare images
@@ -237,11 +256,18 @@ renderMap.layerDrawer.dinamic=function(canvas, canvasCtx, data, setts, clear){
          canvasCtx.strokeStyle=renderMap.color[o.color]|| o.color|| 'white';
          canvasCtx.stroke()
       }else{
-         canvasCtx.globalAlpha=(o.color=='enemy')? 0.9: 0.7;
+         canvasCtx.globalAlpha=(o.color==='enemy')? 0.9: 0.7;
          //rotate canvas by direction's angle from position's point
          renderMap.rotateCanvas(canvas, canvasCtx, setts, o.dir, true, x, y);
          //draw image with scalling
          canvasCtx.drawImage(img, x+imgDX, y+imgDY, imgW, imgH);
+         // draw distance
+         if(settings.debug && o.distance && o.color==='enemy'){
+            canvasCtx.font="10px monospace";
+            canvasCtx.fillStyle="white";
+            canvasCtx.fillText(round(o.distance*1000, 1), x, y);
+         }
+
       }
       //restore state
       canvasCtx.restore();

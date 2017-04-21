@@ -3,7 +3,8 @@ var settings={
    'debug':false,
    'apiHost':'',
    'apiHostTmpl':'http://%s:8111', // 192.168.2.33   localhost
-   'apiFake':false
+   'apiFake':false,
+   'firstRun':true
 };
 var domLink={};
 var renderingSettings={
@@ -12,6 +13,9 @@ var renderingSettings={
 };
 var renderingQueue={'map':{}, 'hud':{}};
 var renderingQueueOld={'map':{}, 'hud':{}};
+
+var mapChangedCB=[];
+var mapLoadedCB=[];
 
 function loadJs(url, cb){
    // console.log('>>> loadJS', url)
@@ -28,7 +32,7 @@ function loadJs(url, cb){
    }
    js.charset='utf-8';
    js.src=url;
-   document.getElementsByTagName("head")[0].appendChild(js);
+   document.getElementsByTagName('head')[0].appendChild(js);
 }
 
 function init_part1(){
@@ -56,6 +60,7 @@ function init_settings(){
    if(Object.keys(url.params).inOf('fakeApi')) settings.apiFake=true;
    if(Object.keys(url.params).inOf('debug')) settings.debug=true;
    settings.apiHost=settings.apiHostTmpl.format(url.params.api|| 'localhost');
+   settings.firstRun=!getCookie('wartts.firstRun');
 }
 
 function init_part2(){
@@ -72,6 +77,7 @@ function init_part2(){
    domLink.mapLayer.debug=$('#mapLayer_debug .canvas')[0];
    domLink.mapLayer.debugCtx=domLink.mapLayer.debug.getContext('2d');
    domLink.loading=$('#loading');
+   domLink.msg_legend=$('#msg_legend');
    //
    renderMap.init();
    renderHud.init();
@@ -87,6 +93,12 @@ function init_part2(){
 }
 
 function inited(){
+   mapChangedCB.push(function(){
+      if(!settings.apiFake && !settings.debug) document.cookie='wartts.firstRun=no';
+   });
+   mapChangedCB.push(function(){
+      return showLegend()|| true;
+   });
 //==events
    Hamster(domLink.map[0]).wheel(function(e, d, dx, dy){
       e.preventDefault();
@@ -99,7 +111,7 @@ function inited(){
       }, function(p){
          p.zoom=renderingSettings.map.zoom+renderingSettings.map.zoomStep*d;
       });
-   })
+   });
 
    domLink.map.on('mousedown', function(e){
       if(e.which!==1 && !e.isTrigger) return;
@@ -119,12 +131,34 @@ function inited(){
          if(tmp.deltaX==dx && tmp.deltaY==dy) return false;
          tmp.deltaX=dx;
          tmp.deltaY=dy;
-         autoPan('set', {'x':tmp.startX-tmp.hX-tmp.deltaX, 'y':tmp.startY-tmp.hY-tmp.deltaY})
+         autoPan('set', {'x':tmp.startX-tmp.hX-tmp.deltaX, 'y':tmp.startY-tmp.hY-tmp.deltaY});
       });
       $(window).on('mouseup', function(e){
          $(window).off('mousemove');
          $(window).off('mouseup');
       });
+   });
+
+   $('body #set_ip').on('mousedown', function(e){
+      if(e.which!==1 && !e.isTrigger) return;
+      e.preventDefault();
+      var href=location.protocol+'//'+location.hostname+(location.port?':'+location.port:'')+location.pathname+(location.search?location.search:'');
+      var ip=window.prompt('Please set IP of PC with runned game', '');
+      if(ip===null) return;
+      else if(!ip) href+='# ';
+      else href+='#api='+ip;
+      window.location.replace(href);
+      window.location.reload(true);
+   });
+
+   $('body').on('keydown', function(e){
+      if(e.keyCode!==112) return;
+      e.preventDefault();
+      if(domLink.msg_legend.hasClass('disabled')) showLegend(true);
+      else{
+         domLink.msg_legend.addClass('disabled');
+         document.cookie='wartts.firstRun=no';
+      }
    });
 //==run cicles
    processMap.apiFake=settings.apiFake;
@@ -158,11 +192,32 @@ function inited(){
             renderingQueueOld.hud[l]=data;
             renderHud[l](data, renderingSettings.hud);
          }
-      })
+      });
    //==next frame and other
       renderingSettings.map.force=false;
       animationReady(arguments.callee);
    });
+}
+
+function showLegend(force){
+   if(!force && !settings.firstRun && !settings.debug) return;
+   var html=[];
+   forMe(renderMap.image, function(k, imgs){
+      if(!renderMap.legendMap[k]) return;
+      html.push({type:'div', style:'display: inline-block; vertical-align: top; line-height: 30px; height: 30px; overflow: hidden; margin-right: 20px;', content:[
+         '<img src="%s" width="24" style="vertical-align: middle;">'.format(imgs.default.src),
+         '<span style="color: #fff; font-size: 14px; vertical-align: middle;v">%s</span>'.format(renderMap.legendMap[k])
+      ]});
+   });
+   if(!html.length) return;
+   html.push('<div class="button" id="close" style="position: absolute; top: 5px; right: 5px; width: 20px; height: 20px; border-radius: 12px; background-color: #fff; text-align: center; line-height: 19px; font-family: monospace; font-size: 14px; font-weight: bold; opacity: 0.8; border: 2px solid #666; cursor: pointer;" title="Press <F1> to see this message again">x</div>');
+   domLink.msg_legend.html(controlGenerator(html)).removeClass('disabled');
+   if(domLink.msg_legend._eventRegistered) return;
+   domLink.msg_legend.on('click', function(e){
+      domLink.msg_legend.addClass('disabled');
+      document.cookie='wartts.firstRun=no';
+   });
+   domLink.msg_legend._eventRegistered=true;
 }
 
 function renderingQueue_mapObjects(data, type){
@@ -200,20 +255,20 @@ function renderingQueue_mapBackground(data){
       img.onload=null;
       if(this.width<100){ //to early, map not loaded yet
          initQueue.splice(initQueue.indexOf('__map__'), 1);
-         renderingQueue_mapBackground.timer=setTimeout(renderingQueue_mapBackground, 5000);
+         renderingQueue_mapBackground.timer=setTimeout(renderingQueue_mapBackground, 1000);
          return;
       }
       renderingQueue.map.background={'img':this, 'saturate':renderingSettings.map.backgroundSaturate, 'anticache':this.id};
-      //saturate background
+      // saturate background
       var s='grayscale(%s%%)'.format((1-renderingQueue.map.background.saturate)*100);
       forMe(['filter', '-webkit-filter', '-moz-filter', '-ms-filter', '-o-filter'], function(n){
          domLink.mapLayer.background.style[n]=s;
       });
-      //save image size
+      // save image size
       var w=this.width, h=this.height;
       renderingSettings.map.width=w;
       renderingSettings.map.height=h;
-      //correct size of layers
+      // correct size of layers
       var mapW=domLink.map.innerWidth(), mapH=domLink.map.innerHeight();
       forMe(['dinamic', 'background', 'player', 'static', 'debug'], function(l){
          domLink.mapLayer[l].width=mapW;
@@ -224,6 +279,12 @@ function renderingQueue_mapBackground(data){
       autoZoom('fitByObjects', {'mapW':w, 'mapH':h, 'wrapW':mapW, 'wrapH':mapH});
        //complited
       initQueue.splice(initQueue.indexOf('__map__'), 1);
+      if(window.mapLoadedCB){
+         if(isFunction(mapLoadedCB)) mapLoadedCB();
+         else if(isArray(mapLoadedCB)) mapLoadedCB=forMe(mapLoadedCB, function(f){
+            return f()? f: null;
+         }, null, true);
+      }
    }
    img.src=url;
 }

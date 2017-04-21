@@ -3,6 +3,7 @@ var processMap={
    'apiHost':'',
    'dataGroup':{'dinamic':[], 'player':[], 'static':[]},
    'dataGroupForRender':{'dinamic':[], 'player':[], 'static':[]},
+   'grid':{},
    'timer':null,
    'mapHash':{}
 };
@@ -36,20 +37,37 @@ processMap.isMapChanged=function(){
    var tFunc_check=function(data, status, r, p){
       processMap.isMapChanged.lastTime=getms(true);
       rCount-=1;
-      // var data=JSON.parse(data);
       dataAll[p.url]=data;
       if(rCount) return;
       var changed=false;
       forMe(dataAll, function(u, d){
+         if(!d) return;
          var h=d.hashCode();
-         if(changed) return processMap.mapHash[u]=h;
-         else if(processMap.mapHash[u]==h) return;
+         if(processMap.mapHash[u]==h) return;
          processMap.mapHash[u]=h;
-         print('MAP CHANGED');
+         if(u.inOf('/mapInfo.js') || u.inOf('/map_info.json')){
+            // get grid settings
+            var data=JSON.parse(d);
+            processMap.grid={
+               'min':data.map_min,
+               'max':data.map_max,
+               'zero':data.grid_zero,
+               'step':data.grid_steps
+            };
+            processMap.calc_coord2meter();
+         }
          changed=true;
-         renderingQueue_mapBackground();
-         processMap.isMapChanged.lastTime=getms(true);
       })
+      if(!changed) return;
+      print('MAP CHANGED');
+      if(window.mapChangedCB){
+         if(isFunction(mapChangedCB)) mapChangedCB();
+         else if(isArray(mapChangedCB)) mapChangedCB=forMe(mapChangedCB, function(f){
+            return f()? f: null;
+         }, null, true);
+      }
+      renderingQueue_mapBackground();
+      processMap.isMapChanged.lastTime=getms(true);
    }
    rCount=url.length;
    forMe(url, function(u){
@@ -151,6 +169,17 @@ processMap.data2group_player=function(o, id){
    var oor={'icon':'', 'color':oo.id, 'x':oo.x.real.last(), 'y':oo.y.real.last(), 'dir':oo.dir.real.last()};
    oor.icon='%s_player'.format(oo.typeMain);
    processMap.dataGroupForRender.player.push(oor);
+
+   // calc distance from player
+   if(id=='neutral' && processMap.grid.coord2meter){
+      forMe(processMap.dataGroupForRender.dinamic, function(oor2){
+         oor2.distance=Math.sqrt((oor2.x-oor.x)**2+(oor2.y-oor.y)**2);
+         oor2.distance=oor2.distance*processMap.grid.coord2meter[0];
+         // print(oor.x, oor2.x)
+         // print(oor2.distance)
+      })
+   }
+
 }
 
 processMap.data2group_dinamic=function(o){
@@ -193,7 +222,14 @@ processMap.data2group_dinamic=function(o){
    if(!oo.typeMain) return;
    processMap.dataGroup.dinamic.push(oo);
    //prep for render
-   var oor={'icon':'', 'color':'', 'x':oo.x.real.last(), 'y':oo.y.real.last(), 'dir':oo.dir.real.last()};
+   var oor={'icon':'', 'color':'', 'x':oo.x.real.last(), 'y':oo.y.real.last(), 'dir':oo.dir.real.last(), 'distance':null};
+   // calc distance from player
+   var player=processMap.dataGroupForRender.player.inObj('color', 'neutral', true);  //get self player, not friend
+   if(player && processMap.grid.coord2meter){
+      var d=Math.sqrt((oor.x-player.x)**2+(oor.y-player.y)**2);
+      oor.distance=d*processMap.grid.coord2meter[0];
+   }
+   // others
    if(oo.isNeutral) oor.color='neutral';
    else if(oo.isFriend) oor.color='friend';
    else oor.color=oo.isEnemy? 'enemy': 'ally';
@@ -237,4 +273,14 @@ processMap.data2group_static=function(o){
    else oor.color=oo.isEnemy? 'enemy': 'ally';
    oor.icon='%s_%s'.format(oo.typeMain, (oo.typeSub|| 'default'));
    processMap.dataGroupForRender.static.push(oor);
+}
+
+processMap.calc_coord2meter=function(){
+   var sizeX=Math.abs(processMap.grid.min[0])+Math.abs(processMap.grid.max[0]);
+   var size2mX=processMap.grid.step[0]/1000;
+   var coord2sizeX=1/sizeX;
+   var coord2mX=coord2sizeX*size2mX;
+   coord2mX=coord2mX*1000/2;  //! видимо в формуле гдето ошибка, без этой поправки значения не сходятся
+   var coord2mY=coord2mX;
+   processMap.grid.coord2meter=[coord2mX, coord2mY];
 }

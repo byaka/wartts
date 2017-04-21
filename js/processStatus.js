@@ -62,14 +62,14 @@ processStatus.data2group=function(data){
    //processing
    var static=['model'];
    var convKeyMap={
-      'type':'model', 'Vy, m/s': 'vspeed', 'TAS, km/h':'speed', 'flaps, %':'flaps', 'throttle 1, %':'throttle', 'gear, %':'gears', 'radiator 1, %':'radiator'
+      'type':'model', 'Vy, m/s': 'vspeed', 'TAS, km/h':'speedTAS', 'IAS, km/h':'speedIAS', 'flaps, %':'flaps', 'throttle 1, %':'throttle', 'gear, %':'gears', 'radiator 1, %':'radiator', 'altitude_hour':'altitude'
    }
    var convValMap={
-      // speed:function(v){return v*3.6},
-      flaps:function(v){return v/100},
-      throttle:function(v){return v/100},
-      gears:function(v){return v/100},
-      radiator:function(v){return v/100},
+      'altitude':function(v){return v*0.3048},
+      'flaps':function(v){return v/100},
+      'throttle':function(v){return v/100},
+      'gears':function(v){return v/100},
+      'radiator':function(v){return v/100},
    }
    forMe(data, function(k, v){
       if(!convKeyMap[k]) return;
