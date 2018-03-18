@@ -142,8 +142,8 @@ processMap.calcRel=function(o, oo){
    var c=o.color.toLowerCase();
    if(['#fffffa'].inOf(c)) oo? oo.isNeutral=true: oo='neutral';
    else if(['#60ff37', '#aaff8e'].inOf(c)) oo? oo.isFriend=true: oo='friend';
-   else if(['#1952ff'].inOf(c)) oo? oo.isEnemy=false: oo='ally';
-   else if(['#ff0d00', '#e10b00', '#f40c00'].inOf(c)) oo? oo.isEnemy=true: oo='enemy';
+   else if(['#1952ff', '#1dccff'].inOf(c)) oo? oo.isEnemy=false: oo='ally';
+   else if(['#ff0d00', '#e10b00', '#f40c00', '#ff0000'].inOf(c)) oo? oo.isEnemy=true: oo='enemy';
    return oo;
 }
 
